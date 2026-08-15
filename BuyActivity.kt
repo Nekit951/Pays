@@ -64,9 +64,14 @@ class BuyActivity : AppCompatActivity() {
 
     private fun buyClick() {
         binding.btnClick.setOnClickListener {
-            //val cartItems = managmentCart.getListCart()
+            val cartItems = managmentCart.getListCart()
             val address = binding.address.text.toString().trim()
             val totalSum = managmentCart.getTotalFee()
+            val title = if (cartItems.isNotEmpty()) {
+                cartItems.joinToString(separator = ", ") { it.title }
+            } else {
+                "Оплата заказа" // Резервное название, если корзина пуста
+            }
 
             if (address.isEmpty()) {
                 binding.address.error = "Пожалуйста, введите адрес доставки"
@@ -76,8 +81,8 @@ class BuyActivity : AppCompatActivity() {
 
             val paymentParameters = PaymentParameters(
                 amount = Amount(BigDecimal(totalSum), java.util.Currency.getInstance("RUB")),
-                title = "Название",
-                subtitle = "Описание товара",
+                title = title,
+                subtitle = "Адрес доставки: ${address}",
                 clientApplicationKey = "test_MTM3NDYyNOSa6MwUhsy-veW8FIfpP15tNqnqouc6p-A",
                 shopId = "1374624",
                 savePaymentMethod = SavePaymentMethod.ON,
