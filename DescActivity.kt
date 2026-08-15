@@ -1,0 +1,47 @@
+package com.example.pays
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.bumptech.glide.Glide
+import com.example.pays.databinding.ActivityDescBinding
+import com.example.pays.helpers.ManagmentCart
+
+class DescActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityDescBinding
+    private lateinit var item: ItemsModel
+    private lateinit var managmentCart: ManagmentCart
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        binding = ActivityDescBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        managmentCart = ManagmentCart(this)
+        item = intent.getSerializableExtra("object")!! as ItemsModel
+
+        setUpViews()
+        addToCart()
+    }
+
+    private fun setUpViews() = with(binding) {
+        itemTitle.text = item.title
+        itemPrice.text = "${item.price} руб."
+        itemQuantity.text = "${item.quantity} шт."
+
+        Glide.with(this@DescActivity).load(item.picUrl).into(picMain)
+    }
+
+    private fun addToCart(){
+        binding.buttonCart.setOnClickListener {
+            item.numberInCart = 1
+            managmentCart.insertFood(item)
+            val intent = Intent(this@DescActivity, CartActivity::class.java)
+            startActivity(intent)
+        }
+    }
+}

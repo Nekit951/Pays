@@ -1,5 +1,6 @@
 package com.example.pays
 
+import android.app.Activity
 import android.content.Intent
 import android.icu.util.Currency
 import android.os.Bundle
@@ -18,36 +19,19 @@ import okhttp3.Address
 import ru.yoomoney.sdk.kassa.payments.Checkout
 import ru.yoomoney.sdk.kassa.payments.Checkout.createTokenizeIntent
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.Amount
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.MockConfiguration
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.PaymentMethodType
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.PaymentParameters
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.SavePaymentMethod
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.TestParameters
 import java.math.BigDecimal
+import java.util.ArrayList
 
 
 class BuyActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityBuyBinding
     private lateinit var managmentCart: ManagmentCart
-
-    private val checkoutLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val data = result.data
-            val tokenizationResult = data?.let { Checkout.createTokenizationResult(it) }
-            val paymentToken = tokenizationResult?.paymentToken
-
-            if (paymentToken != null) {
-                // Только теперь, когда токен у нас, сохраняем заказ в БД
-                saveOrderToFirebase(paymentToken)
-            } else {
-                Toast.makeText(this, "Ошибка: Токен оплаты не получен", Toast.LENGTH_SHORT).show()
-            }
-        } else if (result.resultCode == RESULT_CANCELED) {
-            Toast.makeText(this, "Оплата отменена", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,12 +64,9 @@ class BuyActivity : AppCompatActivity() {
 
     private fun buyClick() {
         binding.btnClick.setOnClickListener {
-            val cartItems = managmentCart.getListCart()
-//            val summa = managmentCart.getTotalFee()
-//            val quantity = cartItems.sumOf { it.numberInCart }
+            //val cartItems = managmentCart.getListCart()
             val address = binding.address.text.toString().trim()
-//            val database = FirebaseDatabase.getInstance().getReference("Orders")
-//            val orderId = database.push().key ?: return@setOnClickListener
+            val totalSum = managmentCart.getTotalFee()
 
             if (address.isEmpty()) {
                 binding.address.error = "Пожалуйста, введите адрес доставки"
@@ -93,75 +74,80 @@ class BuyActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            startTokenize()
-
-//            if (orderId != null) {
-//                val newOrder = OrderModel(orderId, items = ArrayList(cartItems), summa, quantity, address)
-//                database.child(orderId).setValue(newOrder).addOnSuccessListener {
-//                    for (cartItem in cartItems) {
-//                        updateFire(cartItem.id, cartItem.numberInCart)
-//                    }
-//                    val intent = Intent(this, OrderActivity::class.java)
-//                    startActivity(intent)
-//                    managmentCart.clearCart()
-//                    finish()
-//                }
-//            } else {
-//                Toast.makeText(this, "Ваша корзина пуста", Toast.LENGTH_SHORT).show()
-//            }
+            val paymentParameters = PaymentParameters(
+                amount = Amount(BigDecimal(totalSum), java.util.Currency.getInstance("RUB")),
+                title = "Название",
+                subtitle = "Описание товара",
+                clientApplicationKey = "test_MTM3NDYyNOSa6MwUhsy-veW8FIfpP15tNqnqouc6p-A",
+                shopId = "1374624",
+                savePaymentMethod = SavePaymentMethod.ON,
+                paymentMethodTypes = setOf(PaymentMethodType.BANK_CARD, PaymentMethodType.SBERBANK)
+            )
+            val testParameters = TestParameters(
+                showLogs = true,
+                mockConfiguration = MockConfiguration() // Заставляет SDK показать все методы оплаты
+            )
+            val intent = Checkout.createTokenizeIntent(
+                context = this,
+                paymentParameters = paymentParameters,
+                testParameters = testParameters // Передаем параметры отладки
+            )
+           startActivityForResult(intent, 1001)
         }
     }
 
-    fun startTokenize(){
-        val totalSum = managmentCart.getTotalFee()
-        val paymentParameters = PaymentParameters(
-            amount = Amount(BigDecimal(totalSum), java.util.Currency.getInstance("RUB")),
-            title = "Название",
-            subtitle = "Описание товара",
-            clientApplicationKey = "test_MTM3NDYyNOSa6MwUhsy-veW8FIfpP15tNqnqouc6p-A",
-            shopId = "1374624",
-            savePaymentMethod = SavePaymentMethod.OFF,
-            paymentMethodTypes = setOf(PaymentMethodType.YOO_MONEY, PaymentMethodType.BANK_CARD,
-                PaymentMethodType.SBERBANK),
-            gatewayId = "gatewayId"
-        )
-        val intent = createTokenizeIntent(this, paymentParameters)
-        startActivityForResult(intent, 1001)
-    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
-    private fun saveOrderToFirebase(paymentToken: String) {
-        val cartItems = managmentCart.getListCart()
-        val summa = managmentCart.getTotalFee()
-        val quantity = cartItems.sumOf { it.numberInCart }
-        val address = binding.address.text.toString().trim()
+        if (requestCode == 1001) {
+            when (resultCode) {
+                Activity.RESULT_OK -> {
+                    val tokenizationResult = data?.let { Checkout.createTokenizationResult(it) }
 
-        val database = FirebaseDatabase.getInstance().getReference("Orders")
-        val orderId = database.push().key ?: return
+                    // Извлекаем чистую строку токена. В Mock-режиме она вернет "mock_token_..."
+                    val actualTokenString = tokenizationResult?.paymentToken
 
-        // ВАЖНО: Добавьте поле paymentToken и status в вашу OrderModel,
-        // либо передавайте HashMap, чтобы Node.js сервер видел токен и статус "pending"!
-        val newOrder = OrderModel(
-            id = orderId,
-            items = ArrayList(cartItems),
-            summa = summa,
-            quantity = quantity,
-            address = address,
-            paymentToken = paymentToken,
-            status = "pending"
-        )
+                    if (actualTokenString != null) {
+                        val cartItems = managmentCart.getListCart()
+                        val summa = managmentCart.getTotalFee()
+                        val database = FirebaseDatabase.getInstance().getReference("Orders")
+                        val orderId = database.push().key ?: ""
+                        val quantity = cartItems.sumOf { it.numberInCart }
+                        val address = binding.address.text.toString().trim()
 
-        database.child(orderId).setValue(newOrder).addOnSuccessListener {
-            for (cartItem in cartItems) {
-                updateFire(cartItem.id, cartItem.numberInCart)
+
+                        val newOrder = OrderModel(
+                            id = orderId,
+                            items = ArrayList(cartItems),
+                            summa = summa,
+                            quantity = quantity,
+                            address = address,
+                            paymentToken = actualTokenString,
+                            status = "pending"
+                        )
+
+                        database.child(orderId).setValue(newOrder).addOnSuccessListener {
+                            for(cartItem in cartItems){
+                                updateFire(cartItem.id, cartItem.numberInCart)
+                            }
+                            val intent = Intent(this, OrderActivity::class.java)
+                            startActivity(intent)
+                            managmentCart.clearCart()
+                            finish()
+                        }.addOnFailureListener {
+                            Toast.makeText(this, "Ошибка создания заказа в БД", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                Activity.RESULT_CANCELED -> {
+                    // Пользователь закрыл экран оплаты самостоятельно
+                    Toast.makeText(this, "Оплата отменена", Toast.LENGTH_SHORT).show()
+                }
+                Checkout.RESULT_ERROR -> {
+                    val errorDescription = data?.getStringExtra(Checkout.EXTRA_ERROR_DESCRIPTION)
+                    Log.e("YooKassa", "Ошибка SDK: $errorDescription")
+                }
             }
-
-            // Переходим на экран успешного оформления / ожидания
-            val intent = Intent(this, OrderActivity::class.java)
-            startActivity(intent)
-            managmentCart.clearCart()
-            finish()
-        }.addOnFailureListener {
-            Toast.makeText(this, "Ошибка создания заказа в БД", Toast.LENGTH_SHORT).show()
         }
     }
 
