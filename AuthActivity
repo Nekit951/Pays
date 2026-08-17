@@ -18,45 +18,42 @@ class AuthActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Ищем пользователя по номеру телефона
+            // Ищем в базе запись, где поле "phone" совпадает с введенным телефоном
             database.orderByChild("phone").equalTo(phone).get().addOnSuccessListener { snapshot ->
-                if (snapshot.exists()) {
-                    var userFound = false
-                    
-                    // Так как поиск возвращает список (даже из 1 элемента), перебираем его
-                    for (childSnapshot in snapshot.children) {
-                        val user = childSnapshot.getValue(UserModel::class.java)
-                        
-                        // Проверяем, совпадает ли имя
-                        if (user?.name == name) {
-                            userFound = true
-                            val userId = user.id // Получаем его реальный ID из базы
+                
+                // .firstOrNull() берет первую найденную запись, если она есть
+                val childSnapshot = snapshot.children.firstOrNull()
 
-                            // Сохраняем состояние сессии локально
-                            val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
-                            sharePref.edit().apply {
-                                putBoolean("isLoggedIn", true)
-                                putString("USER_ID", userId)
-                                putString("USER_PHONE", phone)
-                                apply()
-                            }
+                if (childSnapshot != null) {
+                    val user = childSnapshot.getValue(UserModel::class.java)
 
-                            val intent = Intent(this, ProfileActivity::class.java).apply {
-                                putExtra("USER_ID", userId)
-                            }
-                            startActivity(intent)
-                            finish()
-                            break
+                    // Проверяем только имя, так как телефон уже отфильтрован базой
+                    if (user?.name == name) {
+                        val userId = user.id
+
+                        // Сохраняем сессию в памяти устройства
+                        val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+                        sharePref.edit().apply {
+                            putBoolean("isLoggedIn", true)
+                            putString("USER_ID", userId)
+                            putString("USER_PHONE", phone)
+                            apply()
                         }
-                    }
-                    if (!userFound) {
-                        Toast.makeText(this, "Имя или телефон не совпадают", Toast.LENGTH_SHORT).show()
+
+                        // Переходим в профиль
+                        val intent = Intent(this, ProfileActivity::class.java).apply {
+                            putExtra("USER_ID", userId)
+                        }
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        Toast.makeText(this, "Неверное имя пользователя", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(this, "Неизвестный пользователь", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Пользователь с таким телефоном не найден", Toast.LENGTH_SHORT).show()
                 }
             }.addOnFailureListener {
-                Toast.makeText(this, "Ошибка сети", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Ошибка сети. Попробуйте позже", Toast.LENGTH_SHORT).show()
             }
         }
     }
