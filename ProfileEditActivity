@@ -1,0 +1,65 @@
+class ProfileEditActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_profile_edit)
+
+        val nameField: EditText = findViewById(R.id.et_name)
+        val phoneField: EditText = findViewById(R.id.et_phone)
+        val emailField: EditText = findViewById(R.id.et_email)
+        val btnSave: Button = findViewById(R.id.btn_edit)
+
+        val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+        // Достаем именно USER_ID, так как он является ключом в Firebase
+        val userId = sharePref.getString("USER_ID", "") ?: ""
+
+        val database = FirebaseDatabase.getInstance().getReference("User")
+
+        if (userId.isNotEmpty()) {
+            database.child(userId).get().addOnSuccessListener { snapshot ->
+                if (snapshot.exists()) {
+                    val user = snapshot.getValue(UserModel::class.java)
+                    nameField.setText(user?.name)
+                    phoneField.setText(user?.phone)
+                    emailField.setText(user?.email)
+                }
+            }.addOnFailureListener {
+                Toast.makeText(this, "Ошибка загрузки данных", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnSave.setOnClickListener {
+            val newName = nameField.text.toString().trim()
+            val newPhone = phoneField.text.toString().trim()
+            val newEmail = emailField.text.toString().trim()
+
+            if (newName.isEmpty() || newPhone.isEmpty() || newEmail.isEmpty()) {
+                Toast.makeText(this, "Все поля должны быть заполнены", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val updateUser = mapOf(
+                "name" to newName,
+                "phone" to newPhone,
+                "email" to newEmail
+            )
+
+            // Важно: обновляем конкретного ребенка child(userId), а не весь корень!
+            database.child(userId).updateChildren(updateUser).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    sharePref.edit().putString("USER_PHONE", newPhone).apply()
+                    Toast.makeText(this, "Данные изменены", Toast.LENGTH_SHORT).show()
+
+                    // Возвращаемся в профиль. Передаем ID обратно через Intent
+                    val intent = Intent(this, ProfileActivity::class.java).apply {
+                        putExtra("USER_ID", userId)
+                    }
+                    startActivity(intent)
+                    finish()
+                }
+            }.addOnFailureListener {
+                Toast.makeText(this, "Данные не обновились", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
