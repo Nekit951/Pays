@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +20,7 @@ class RegActivity : AppCompatActivity() {
         val userPhone: EditText = findViewById(R.id.tvPhone)
         val userEmail: EditText = findViewById(R.id.tvEmail)
         val button: Button = findViewById(R.id.btnReg)
+        val auth: TextView = findViewById(R.id.auth)
 
         button.setOnClickListener {
             val name = userName.text.toString().trim()
@@ -39,12 +41,26 @@ class RegActivity : AppCompatActivity() {
                     userPhone.text.clear()
                     userEmail.text.clear()
 
-                    val intent = Intent(this, ProfileActivity::class.java)
-                    intent.putExtra("USER_ID", userId)
+                    val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+                    with(sharePref.edit()) {
+                        putBoolean("isLoggedIn", true)
+                        putString("USER_ID", userId)
+                        putString("USER_PHONE", phone)
+                        apply()
+                    }
+
+                    val intent = Intent(this, ProfileActivity::class.java).apply {
+                        putExtra("USER_ID", userId)
+                    }
                     startActivity(intent)
                     finish()
                 }
             }
+        }
+
+        auth.setOnClickListener {
+            val intent = Intent(this, AuthActivity::class.java)
+            startActivity(intent)
         }
 
     }
