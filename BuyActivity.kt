@@ -36,6 +36,7 @@ class BuyActivity : AppCompatActivity() {
 
         initBuy()
         initTotal()
+        addressInit()
         buyClick()
     }
 
@@ -66,7 +67,6 @@ class BuyActivity : AppCompatActivity() {
             } else {
                 "Оплата заказа" // Резервное название, если корзина пуста
             }
-
 
             if (address.isEmpty()) {
                 binding.address.error = "Пожалуйста, введите адрес доставки"
@@ -141,6 +141,34 @@ class BuyActivity : AppCompatActivity() {
                     Log.e("YooKassa", "Ошибка SDK: $errorDescription")
                 }
             }
+        }
+    }
+
+    private fun addressInit(){
+        val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+        val userId = sharePref.getString("USER_ID", "") ?: ""
+        val database = FirebaseDatabase.getInstance().getReference("User")
+
+        if(userId.isNotEmpty()){
+            database.child(userId).get().addOnSuccessListener { snapshot ->
+                if(snapshot.exists()){
+                    val user = snapshot.getValue(UserModel::class.java)
+                    val useradd = user?.address
+
+                    if(useradd != null && useradd.city.isNotEmpty()){
+                        val fullAddressString = "ул./дом: ${useradd.city}, под.: ${useradd.podiezd}, эт.: ${useradd.etazh}, кв.: ${useradd.kvartira}"
+                        binding.address.setText(fullAddressString)
+                    }
+                    else {
+                        binding.address.setText("")
+                    }
+                }
+            }
+        }
+        binding.address.setFocusable(false) // Запрещаем ввод текста вручную на этом экране
+        binding.address.setOnClickListener {
+            val intent = Intent(this, AddressActivity::class.java)
+            startActivity(intent)
         }
     }
 

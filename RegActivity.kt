@@ -34,7 +34,7 @@ class RegActivity : AppCompatActivity() {
                 val firebase = FirebaseDatabase.getInstance().getReference("User")
                 val userId = firebase.push().key ?: ""
 
-                val newUser = UserModel(userId, name, phone, email)
+                val newUser = UserModel(userId, name, null, phone, email)
 
                 firebase.child(userId).setValue(newUser).addOnSuccessListener {
                     userName.text.clear()

@@ -4,4 +4,4 @@ import com.google.firebase.database.IgnoreExtraProperties
 import java.io.Serializable
 
 @IgnoreExtraProperties
-data class UserModel(val id: String = "", val name: String = "", val phone: String = "", val email: String = ""): Serializable
+data class UserModel(val id: String = "", val name: String = "", val address: UserAddress? = null, val phone: String = "", val email: String = ""): Serializable

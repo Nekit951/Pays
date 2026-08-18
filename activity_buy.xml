@@ -48,16 +48,21 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    app:hintTextColor="@color/black">
+                    app:hintTextColor="@color/black"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@android:drawable/ic_menu_mapmode">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/address"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Введите адрес"
-                        android:inputType="text"
+                        android:hint="Нажмите, чтобы выбрать адрес"
+                        android:inputType="none"
+                        android:focusable="false"
+                        android:clickable="true"
                         android:textColor="@color/black" />
                 </com.google.android.material.textfield.TextInputLayout>
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
