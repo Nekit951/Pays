@@ -38,10 +38,20 @@ class DescActivity : AppCompatActivity() {
 
     private fun addToCart(){
         binding.buttonCart.setOnClickListener {
-            item.numberInCart = 1
-            managmentCart.insertFood(item)
-            val intent = Intent(this@DescActivity, CartActivity::class.java)
-            startActivity(intent)
+            val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+            val isLoggedIn = sharePref.getBoolean("isLoggedIn", false)
+            val savedUserId = sharePref.getString("USER_ID", "") ?: ""
+
+            if(isLoggedIn && savedUserId.isNotEmpty()){
+                item.numberInCart = 1
+                managmentCart.insertFood(item)
+                val intent = Intent(this, CartActivity::class.java)
+                startActivity(intent)
+            }
+            else{
+                val intent = Intent(this, RegActivity::class.java)
+                startActivity(intent)
+            }
         }
     }
 }
