@@ -2,22 +2,16 @@ package com.example.pays
 
 import android.app.Activity
 import android.content.Intent
-import android.icu.util.Currency
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.pays.databinding.ActivityBuyBinding
 import com.example.pays.helpers.ManagmentCart
 import com.google.firebase.database.FirebaseDatabase
-import okhttp3.Address
 import ru.yoomoney.sdk.kassa.payments.Checkout
-import ru.yoomoney.sdk.kassa.payments.Checkout.createTokenizeIntent
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.Amount
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.MockConfiguration
 import ru.yoomoney.sdk.kassa.payments.checkoutParameters.PaymentMethodType
@@ -64,14 +58,15 @@ class BuyActivity : AppCompatActivity() {
 
     private fun buyClick() {
         binding.btnClick.setOnClickListener {
-            val cartItems = managmentCart.getListCart()
             val address = binding.address.text.toString().trim()
             val totalSum = managmentCart.getTotalFee()
+            val cartItems = managmentCart.getListCart()
             val title = if (cartItems.isNotEmpty()) {
                 cartItems.joinToString(separator = ", ") { it.title }
             } else {
                 "Оплата заказа" // Резервное название, если корзина пуста
             }
+
 
             if (address.isEmpty()) {
                 binding.address.error = "Пожалуйста, введите адрес доставки"
@@ -113,35 +108,28 @@ class BuyActivity : AppCompatActivity() {
                     val actualTokenString = tokenizationResult?.paymentToken
 
                     if (actualTokenString != null) {
-                        val cartItems = managmentCart.getListCart()
-                        val summa = managmentCart.getTotalFee()
-                        val database = FirebaseDatabase.getInstance().getReference("Orders")
-                        val orderId = database.push().key ?: ""
-                        val quantity = cartItems.sumOf { it.numberInCart }
-                        val address = binding.address.text.toString().trim()
+                        val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+                        val userId = sharePref.getString("USER_ID", "") ?: ""
+                        val database = FirebaseDatabase.getInstance().getReference("User")
 
+                        database.child(userId).get().addOnSuccessListener { snapshot ->
+                            if(snapshot.exists()){
+                                val user = snapshot.getValue(UserModel::class.java)
 
-                        val newOrder = OrderModel(
-                            id = orderId,
-                            items = ArrayList(cartItems),
-                            summa = summa,
-                            quantity = quantity,
-                            address = address,
-                            paymentToken = actualTokenString,
-                            status = "pending"
-                        )
-
-                        database.child(orderId).setValue(newOrder).addOnSuccessListener {
-                            for(cartItem in cartItems){
-                                updateFire(cartItem.id, cartItem.numberInCart)
+                                if(user != null){
+                                    createOrder(user, actualTokenString)
+                                }
+                                else{
+                                    Toast.makeText(this, "Ошибка чтения профиля", Toast.LENGTH_SHORT).show()
+                                }
                             }
-                            val intent = Intent(this, OrderActivity::class.java)
-                            startActivity(intent)
-                            managmentCart.clearCart()
-                            finish()
-                        }.addOnFailureListener {
-                            Toast.makeText(this, "Ошибка создания заказа в БД", Toast.LENGTH_SHORT).show()
+                            else {
+                                Toast.makeText(this, "Профиль не найден в базе данных", Toast.LENGTH_SHORT).show()
+                            }
                         }
+                            .addOnFailureListener {
+                                Toast.makeText(this, "Ошибка сети при загрузке профиля", Toast.LENGTH_SHORT).show()
+                            }
                     }
                 }
                 Activity.RESULT_CANCELED -> {
@@ -153,6 +141,39 @@ class BuyActivity : AppCompatActivity() {
                     Log.e("YooKassa", "Ошибка SDK: $errorDescription")
                 }
             }
+        }
+    }
+
+    private fun createOrder(user: UserModel, actualTokenString: String){
+        val cartItems = managmentCart.getListCart()
+        val summa = managmentCart.getTotalFee()
+        val database = FirebaseDatabase.getInstance().getReference("Orders")
+        val orderId = database.push().key ?: ""
+        val quantity = cartItems.sumOf { it.numberInCart }
+        val address = binding.address.text.toString().trim()
+
+
+        val newOrder = OrderModel(
+            id = orderId,
+            items = ArrayList(cartItems),
+            user = user,
+            summa = summa,
+            quantity = quantity,
+            address = address,
+            paymentToken = actualTokenString,
+            status = "pending"
+        )
+
+        database.child(orderId).setValue(newOrder).addOnSuccessListener {
+            for(cartItem in cartItems){
+                updateFire(cartItem.id, cartItem.numberInCart)
+            }
+            val intent = Intent(this, OrderActivity::class.java)
+            startActivity(intent)
+            managmentCart.clearCart()
+            finish()
+        }.addOnFailureListener {
+            Toast.makeText(this, "Ошибка создания заказа в БД", Toast.LENGTH_SHORT).show()
         }
     }
 
