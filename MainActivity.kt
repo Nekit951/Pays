@@ -25,6 +25,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initItems()
+        reg()
     }
 
     private fun initItems() {
@@ -42,6 +43,24 @@ class MainActivity : AppCompatActivity() {
                 itemsAdapter.updateDate(ArrayList(data))
             }
             viewModel.loadItems()
+        }
+    }
+    
+    private fun reg(){
+        binding.btnReg.setOnClickListener {
+            val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+            val isLoggedIn = sharePref.getBoolean("isLoggedIn", false)
+            val savedUserId = sharePref.getString("USER_ID", "") ?: ""
+            if(isLoggedIn && savedUserId.isNotEmpty()){
+                val intent = Intent(this, ProfileActivity::class.java).apply{
+                    putExtra("USER_ID", savedUserId)
+                }
+                startActivity(intent)
+            }
+            else{
+                val intent = Intent(this, RegActivity::class.java)
+                startActivity(intent)
+            }
         }
     }
 }
