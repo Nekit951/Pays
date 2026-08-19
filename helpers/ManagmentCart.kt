@@ -2,7 +2,7 @@ package com.example.pays.helpers
 
 import android.content.Context
 import android.widget.Toast
-import com.example.pays.ItemsModel
+import com.example.pays.models.ItemsModel
 
 class ManagmentCart(val context: Context) {
 

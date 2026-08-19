@@ -1,0 +1,73 @@
+package com.example.pays.activities
+
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import com.example.pays.R
+import com.example.pays.models.UserModel
+import com.google.firebase.database.FirebaseDatabase
+
+class ProfileEditActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_profile_edit)
+
+        val Name: EditText = findViewById(R.id.et_name)
+        val Phone: EditText = findViewById(R.id.et_phone)
+        val Email: EditText = findViewById(R.id.et_email)
+        val btn: Button = findViewById(R.id.btn_edit)
+
+        val sharePref = getSharedPreferences("UserPref", MODE_PRIVATE)
+        val userId = sharePref.getString("USER_ID", "") ?: ""
+
+        val database = FirebaseDatabase.getInstance().getReference("User")
+
+        database.child(userId).get().addOnSuccessListener { snapshot ->
+            if(snapshot.exists()){
+                val user = snapshot.getValue(UserModel::class.java)
+                Name.setText(user?.name)
+                Phone.setText(user?.phone)
+                Email.setText(user?.email)
+            }
+        }
+            .addOnFailureListener {
+                Toast.makeText(this, "Измененние невозможно", Toast.LENGTH_SHORT).show()
+            }
+
+        btn.setOnClickListener {
+            val newName = Name.text.toString().trim()
+            val newPhone = Phone.text.toString().trim()
+            val newEmail = Email.text.toString().trim()
+
+            if(newName == "" || newPhone == "" || newEmail == ""){
+                Toast.makeText(this, "Все поля должны заполнены", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val updateUser = mapOf("name" to newName, "phone" to newPhone, "email" to newEmail)
+
+            database.child(userId).updateChildren(updateUser).addOnCompleteListener { task ->
+                if(task.isSuccessful){
+                    val editor = sharePref.edit()
+                    editor.putString("USER_PHONE", newPhone)
+                    editor.apply()
+                    Toast.makeText(this, "Данные изменены", Toast.LENGTH_SHORT).show()
+
+                    val intent = Intent(this, ProfileActivity::class.java).apply {
+                        putExtra("USER_ID", userId)
+                    }
+                    startActivity(intent)
+                    finish()
+                }
+            }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Данные не обновились", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+}
