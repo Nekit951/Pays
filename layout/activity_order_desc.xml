@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- РЯД 1: КРУЖКИ И ЛИНИИ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp">
+
+            <!-- Шаг 1 (Оформлен — синий с галочкой) -->
+            <View
+                android:id="@+id/ivStep1"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/step_done_circle" />
+
+            <!-- Линия 1 (Синяя) -->
+            <View
+                android:id="@+id/lineStep1"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:layout_weight="1"
+                android:background="#0000FF" />
+
+            <!-- Шаг 2 (Обработка — синий с галочкой) -->
+            <View
+                android:id="@+id/ivStep2"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/step_done_circle" />
+
+            <!-- Линия 2 (Серая) -->
+            <View
+                android:id="@+id/lineStep2"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:layout_weight="1"
+                android:background="#DCDCDC" />
+
+            <!-- Шаг 3 (В пути — серый пустой круг) -->
+            <View
+                android:id="@+id/ivStep3"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/step_waiting_circle" />
+
+            <!-- Линия 3 (Серая) -->
+            <View
+                android:id="@+id/lineStep3"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:layout_weight="1"
+                android:background="#DCDCDC" />
+
+            <!-- Шаг 4 (Доставлен — серый пустой круг) -->
+            <View
+                android:id="@+id/ivStep4"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/step_waiting_circle" />
+        </LinearLayout>
+
+        <!-- РЯД 2: ПОДПИСИ ПОД КРУЖКАМИ (Добавьте этот блок) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <!-- Текст для Шага 1 -->
+            <TextView
+                android:id="@+id/tvStep1Text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Оформлен"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:gravity="center" />
+
+            <!-- Текст для Шага 2 -->
+            <TextView
+                android:id="@+id/tvStep2Text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Обработка"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:gravity="center" />
+
+            <!-- Текст для Шага 3 (Изначально серый) -->
+            <TextView
+                android:id="@+id/tvStep3Text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="В пути"
+                android:textColor="#757575"
+                android:textSize="12sp"
+                android:gravity="center" />
+
+            <!-- Текст для Шага 4 (Изначально серый) -->
+            <TextView
+                android:id="@+id/tvStep4Text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Доставлен"
+                android:textColor="#757575"
+                android:textSize="12sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewOrderDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginBottom="24dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/viewholder_order_desc" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Сумма"
+                    android:textColor="@color/black"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/final_price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="5000 ₽"
+                    android:textColor="@color/black"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Адрес доставки"
+                    android:textColor="@color/black"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/adress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Адрес доставки"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/btnClick"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="#0000FF"
+            android:text="Отменить заказ"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
